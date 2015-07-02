@@ -2,6 +2,7 @@
 
 HIGHLIGHT="\e[7m"
 NORMAL='\e[00m'
+CMD="emacs"
 
 DIR=.
 if [ "$1" != "" ]; then DIR=$1; fi
@@ -9,26 +10,27 @@ cd $DIR>/dev/null; echo -e "${HIGHLIGHT}Finding uncommited git repository in ${P
 
 find $DIR -name .git -and -type d -print0 | while IFS= read -r -d $'\0' line; do 
     REPO="$(dirname -- "$line"; printf x)" && REPO="${REPO%?x}"
-    echo $REPO
     DIRTY=false
+    MSG=""
     
     # http://stackoverflow.com/questions/2657935/checking-for-a-dirty-index-or-untracked-files-with-git
     if ! git -C "$REPO" diff-index --quiet --cached HEAD ; then
-	echo "Staged changes found"
+	MSG="$MSG Staged changes found\n"
 	DIRTY=true
     fi
     if ! git -C "$REPO" diff-files --quiet ; then 
-	echo "Unstaged changes found"
+        MSG="$MSG Unstaged changes found\n"
 	DIRTY=true
     fi
     if [ $(git -C "$REPO" clean -n -d | wc -c) -ne 0 ]; then
-	echo "Untracked, not ignored files found"
+	MSG="$MSG Untracked, not ignored files found\n"
 	DIRTY=true
     fi
 
-    echo $DIRTY
     if [ "$DIRTY" = true ] ; then
-	echo "DIRTY!"
+	echo "$REPO found to be dirty:"
+	echo -ne $MSG
+	echo    # (optional) move to a new line
     fi
-    echo    
+    $CMD
 done
